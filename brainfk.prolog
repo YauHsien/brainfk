@@ -4,31 +4,11 @@
 % [<+++++++>-]<++.------------.>++++++[<+++++++++>-]<+.<.+++.------.
 % --------.>>>++++[<++++++++>-]<+.
 case(
-    [
-        >, +(8),
-        loop([
-            <, +(9), >, -
-        ]),
-        >, '.', <, +(4),
-        loop([
-            <, +(7), >, -
-        ]),
-        <, +, '.', +(7), '.'(2), +(3), '.', >(2), +(6),
-        loop([
-            <, +(7), >, -
-        ]),
-        <, +(2), '.', -(12), '.', >, +(6),
-        loop([
-            <, +(9), >, -
-        ]),
-        <, +, '.', <, '.', +(3), '.',
-        -(5), '.', -(8), '.', +(3), +(4),
-        loop([
-            <, +(8), >, -
-        ]),
-        <, +, '.'
-    ]
+    " >++++++++[<+++++++++>-]<.>++++[<+++++++>-]<+.+++++++..+++.>>++++++
+     [<+++++++>-]<++.------------.>++++++[<+++++++++>-]<+.<.+++.------.
+     --------.>>>++++[<++++++++>-]<+."
 ).
+
 
 machine((pointer(0), cells([]))).
 
@@ -88,13 +68,80 @@ eval([Term|Prog], Machine, Machine2) :-
     eval(Term2, Machine, Machine4),
     eval(Prog, Machine4, Machine2).
 
-%%%% To test the case "Hello, World",
-% ?- machine(M), case(Prog), eval(Prog,M,M2).
-% elo, Worme͡
-% M = (pointer(0), cells([])),
-% Prog = [>, +8, loop([<, +9, >, -]), >, '.', <, +4, loop([...|...]), <|...],
-% M2 = (pointer(-1), cells([(-1, 865), (0, 0), (1, 87), (2, 0)])).
-
 
 zerop((pointer(P), cells(Cs))) :-
     once(\+ (member((P,V), Cs), \+ var(V), V =\= 0)).
+
+
+inset(Term) :-
+    member(Term, [>,<,+,-,'.',',','[',']']).
+
+
+input(Raw, Parsed) :-
+    string_codes(Raw, Cs0),
+    findall(A, (member(E, Cs0),
+                atom_codes(A, [E]),
+                inset(A)), Raw0),
+    parse(Raw0, Parsed).
+parse(Raw0, Parsed) :-
+    parse(Raw0, [[]], Parsed).
+
+%%%% To test the input case "Hello, World",
+% ?- case(Case), input(Case, Parsed), format("~p~n", [Parsed]).
+% [>,+8,loop([<,+9,>,-]),<,'.',>,+4,loop([<,+7,>,-]),<,+,'.',+7,'.'(2),+3,'.',>(2),+6,loop([<,+7,>,-]),<,+2,'.',- 12,'.',>,+6,loop([<,+9,>,-]),<,+,'.',<,'.',+3,'.',- 6,'.',- 8,'.',>(3),+4,loop([<,+8,>,-]),<,+,'.']
+% Case = " >++++++++[<+++++++++>-]<.>++++[<+++++++>-]<+.+++++++..+++.>>++++++\n     [<+++++++>-]<++.------------.>++++++[<+++++++++>-]<+.<.+++.------.\n     --------.>>>++++[<++++++++>-]<+.",
+% Parsed = [>, +8, loop([<, +9, >, -]), <, '.', >, +4, loop([...|...]), <|...].
+
+parse([], [Acc], Parsed) :- !,
+    condense_and_reverse(Acc, Parsed).
+parse([], Incomplete, _) :- !,
+    format("Failed parsing: ~p~n", [Incomplete]).
+parse([']'|Raw0], [Part,Parent|Acc], Parsed) :- !,
+    condense_and_reverse(Part, R0),
+    parse(Raw0, [[loop(R0)|Parent]|Acc], Parsed).
+parse(['['|Raw0], [Parent|Acc], Parsed) :- !,
+    parse(Raw0, [[],Parent|Acc], Parsed).
+parse([Term|Raw0], [Part|Acc], Parsed) :-
+    parse(Raw0, [[Term|Part]|Acc], Parsed).
+condense_and_reverse(List, Result) :-
+    condense_and_reverse(List, [], Result).
+
+condense_and_reverse([], Result, Result) :- !.
+condense_and_reverse([Term|List], [], Result) :-
+    inset(Term), !,
+    condense_and_reverse(List, [Term], Result).
+condense_and_reverse([X|List], [X|Acc], Result) :- !,
+    double(X, X2),
+    condense_and_reverse(List, [X2|Acc], Result).
+condense_and_reverse([X|List], [Xn|Acc], Result) :-
+    match(X,Xn, N),
+    N2 is N+1,
+    match(X, Xn2, N2), !,
+    condense_and_reverse(List, [Xn2|Acc], Result).
+condense_and_reverse([X|List], Acc, Result) :-
+    condense_and_reverse(List, [X|Acc], Result).
+
+
+double(>, >(2)).
+double(<, <(2)).
+double(+, +(2)).
+double(-, -(2)).
+double('.', '.'(2)).
+double(',', ','(2)).
+
+match(>, >(N), N).
+match(<, <(N), N).
+match(+, +(N), N).
+match(-, -(N), N).
+match('.', '.'(N), N).
+match(',', ','(N), N).
+
+
+example :-
+    case(Case), input(Case, Prog), machine(M), eval(Prog, M, M2),
+    format("~nEventual machine state: ~p~n", [M2]).
+%%%% By running the example,
+% ?- example.
+% Helo, World!
+% Eventual machine state: pointer(2),cells([(2,33),(3,0),(0,100),(1,87)])
+% true.
