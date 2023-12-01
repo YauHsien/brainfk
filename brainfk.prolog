@@ -42,9 +42,11 @@ eval(dec(N), (pointer(P), cells(Cs)), (pointer(P), cells([(P,V)|Cs2]))) :-
     V is V0-N,
     findall((P2,V2), (member((P2,V2), Cs), P =\= P2), Cs2).
 
-eval(output(N), (pointer(P), cells(Cs)), (pointer(P), cells(Cs))) :-
+eval(output(N), (pointer(P), cells(Cs)), Machine) :-
     N > 0, !,
-    once((member((P,V), Cs), !, put_char(V); true)).
+    once((member((P,V), Cs), !, put_char(V); true)),
+    N2 is N-1,
+    eval(output(N2), (pointer(P), cells(Cs)), Machine).
 eval(output(0), Machine, Machine).
 
 %%%% To test ">++++++++", which means [forward(1), inc(8)],
