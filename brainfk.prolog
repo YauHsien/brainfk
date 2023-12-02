@@ -34,12 +34,12 @@ eval(backward(N), (pointer(P), cells(Cs)), (pointer(P1), cells(Cs))) :-
 
 eval(inc(N), (pointer(P), cells(Cs)), (pointer(P), cells([(P,V)|Cs2]))) :-
     once((member((P,V0), Cs), !; V0 = 0)),
-    V is V0+N,
+    V is (V0+N) mod 256,
     findall((P2,V2), (member((P2,V2), Cs), P =\= P2), Cs2).
 
 eval(dec(N), (pointer(P), cells(Cs)), (pointer(P), cells([(P,V)|Cs2]))) :-
     once((member((P,V0), Cs), !; V0 = 0)),
-    V is V0-N,
+    V is (V0-N) mod 256,
     findall((P2,V2), (member((P2,V2), Cs), P =\= P2), Cs2).
 
 eval(output(N), (pointer(P), cells(Cs)), Machine) :-
