@@ -49,6 +49,15 @@ eval(output(N), (pointer(P), cells(Cs)), Machine) :-
     eval(output(N2), (pointer(P), cells(Cs)), Machine).
 eval(output(0), Machine, Machine).
 
+eval(input(N), (pointer(P), cells(Cs)), Machine) :-
+    N > 0, !,
+    ( get_char(A), char_code(A,V),
+      findall((P2,V2), (member((P2,V2), Cs), P =\= P2), Cs2)
+    ),
+    N2 is N-1,
+    eval(input(N2), (pointer(P), cells([(P,V)|Cs2])), Machine).
+eval(input(0), Machine, Machine).
+
 %%%% To test ">++++++++", which means [forward(1), inc(8)],
 % ?- machine(M), eval(forward(1), M, M2), eval(inc(8), M2, M3).
 % M = (pointer(0), cells([])),
